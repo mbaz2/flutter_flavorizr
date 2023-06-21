@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2023 Angelo Cassano
+ * Copyright (c) 2022 MyLittleSuite
  *
  * Permission is hereby granted, free of charge, to any person
  * obtaining a copy of this software and associated documentation
@@ -25,44 +25,38 @@
 
 import 'dart:io';
 
-import 'package:flutter_flavorizr/src/parser/models/flavorizr.dart';
-import 'package:flutter_flavorizr/src/processors/android/android_build_gradle_processor.dart';
-import 'package:flutter_flavorizr/src/processors/android/android_dummy_assets_processor.dart';
-import 'package:flutter_flavorizr/src/processors/android/android_manifest_processor.dart';
-import 'package:flutter_flavorizr/src/processors/android/icons/android_icons_processor.dart';
-import 'package:flutter_flavorizr/src/processors/commons/abstract_processor.dart';
-import 'package:flutter_flavorizr/src/processors/commons/copy_file_processor.dart';
-import 'package:flutter_flavorizr/src/processors/commons/copy_folder_processor.dart';
-import 'package:flutter_flavorizr/src/processors/commons/delete_file_processor.dart';
-import 'package:flutter_flavorizr/src/processors/commons/download_file_processor.dart';
-import 'package:flutter_flavorizr/src/processors/commons/existing_file_string_processor.dart';
-import 'package:flutter_flavorizr/src/processors/commons/new_file_string_processor.dart';
-import 'package:flutter_flavorizr/src/processors/commons/queue_processor.dart';
-import 'package:flutter_flavorizr/src/processors/commons/unzip_file_processor.dart';
-import 'package:flutter_flavorizr/src/processors/darwin/darwin_schemas_processor.dart';
-import 'package:flutter_flavorizr/src/processors/flutter/flutter_flavors_processor.dart';
-import 'package:flutter_flavorizr/src/processors/flutter/target/flutter_targets_file_processor.dart';
-import 'package:flutter_flavorizr/src/processors/google/firebase/firebase_processor.dart';
-import 'package:flutter_flavorizr/src/processors/huawei/agconnect/agconnect_processor.dart';
-import 'package:flutter_flavorizr/src/processors/ide/ide_processor.dart';
-import 'package:flutter_flavorizr/src/processors/ios/build_configuration/ios_build_configurations_targets_processor.dart';
-import 'package:flutter_flavorizr/src/processors/ios/dummy_assets/ios_dummy_assets_targets_processor.dart';
-import 'package:flutter_flavorizr/src/processors/ios/icons/ios_icons_processor.dart';
-import 'package:flutter_flavorizr/src/processors/ios/ios_plist_processor.dart';
-import 'package:flutter_flavorizr/src/processors/ios/launch_screen/ios_targets_launchscreen_file_processor.dart';
-import 'package:flutter_flavorizr/src/processors/ios/xcconfig/ios_xcconfig_targets_file_processor.dart';
-import 'package:flutter_flavorizr/src/processors/macos/build_configuration/macos_build_configurations_targets_processor.dart';
-import 'package:flutter_flavorizr/src/processors/macos/configs/macos_configs_targets_file_processor.dart';
-import 'package:flutter_flavorizr/src/processors/macos/dummy_assets/macos_dummy_assets_targets_processor.dart';
-import 'package:flutter_flavorizr/src/processors/macos/icons/macos_icons_processor.dart';
-import 'package:flutter_flavorizr/src/processors/macos/macos_plist_processor.dart';
-import 'package:flutter_flavorizr/src/processors/macos/xcconfig/macos_xcconfig_targets_file_processor.dart';
-import 'package:flutter_flavorizr/src/utils/constants.dart';
+import 'package:flutter_flavorizr/parser/models/pubspec.dart';
+import 'package:flutter_flavorizr/processors/android/android_build_gradle_processor.dart';
+import 'package:flutter_flavorizr/processors/android/android_dummy_assets_processor.dart';
+import 'package:flutter_flavorizr/processors/android/android_manifest_processor.dart';
+import 'package:flutter_flavorizr/processors/android/icons/android_icons_processor.dart';
+import 'package:flutter_flavorizr/processors/commons/abstract_processor.dart';
+import 'package:flutter_flavorizr/processors/commons/copy_file_processor.dart';
+import 'package:flutter_flavorizr/processors/commons/copy_folder_processor.dart';
+import 'package:flutter_flavorizr/processors/commons/delete_file_processor.dart';
+import 'package:flutter_flavorizr/processors/commons/download_file_processor.dart';
+import 'package:flutter_flavorizr/processors/commons/existing_file_string_processor.dart';
+import 'package:flutter_flavorizr/processors/commons/new_file_string_processor.dart';
+import 'package:flutter_flavorizr/processors/commons/queue_processor.dart';
+import 'package:flutter_flavorizr/processors/commons/unzip_file_processor.dart';
+import 'package:flutter_flavorizr/processors/flutter/flutter_flavors_processor.dart';
+import 'package:flutter_flavorizr/processors/flutter/target/flutter_targets_file_processor.dart';
+import 'package:flutter_flavorizr/processors/google/firebase/firebase_processor.dart';
+import 'package:flutter_flavorizr/processors/huawei/agconnect/agconnect_processor.dart';
+import 'package:flutter_flavorizr/processors/ide/ide_processor.dart';
+import 'package:flutter_flavorizr/processors/ios/build_configuration/ios_build_configurations_targets_processor.dart';
+import 'package:flutter_flavorizr/processors/ios/dummy_assets/ios_dummy_assets_targets_processor.dart';
+import 'package:flutter_flavorizr/processors/ios/icons/ios_icons_processor.dart';
+import 'package:flutter_flavorizr/processors/ios/ios_plist_processor.dart';
+import 'package:flutter_flavorizr/processors/ios/ios_schemas_processor.dart';
+import 'package:flutter_flavorizr/processors/ios/launch_screen/ios_targets_launchscreen_file_processor.dart';
+import 'package:flutter_flavorizr/processors/ios/xcconfig/ios_xcconfig_targets_file_processor.dart';
+import 'package:flutter_flavorizr/utils/constants.dart';
 
 class Processor extends AbstractProcessor<void> {
-  final Map<String, AbstractProcessor<void> Function()> _availableProcessors;
+  final Map<String, AbstractProcessor<void>> _availableProcessors;
 
-  final Flavorizr _flavorizr;
+  final Pubspec _pubspec;
   static const List<String> defaultInstructionSet = [
     // Prepare
     'assets:download',
@@ -78,7 +72,6 @@ class Processor extends AbstractProcessor<void> {
     'flutter:flavors',
     'flutter:app',
     'flutter:pages',
-    'flutter:main',
     'flutter:targets',
 
     // iOS
@@ -89,15 +82,6 @@ class Processor extends AbstractProcessor<void> {
     'ios:icons',
     'ios:plist',
     'ios:launchScreen',
-
-    // macOS
-    'macos:xcconfig',
-    'macos:configs',
-    'macos:buildTargets',
-    'macos:schema',
-    'macos:dummyAssets',
-    'macos:icons',
-    'macos:plist',
 
     // Google
     'google:firebase',
@@ -112,26 +96,19 @@ class Processor extends AbstractProcessor<void> {
     'ide:config'
   ];
 
-  Processor(this._flavorizr)
-      : _availableProcessors = _initAvailableProcessors(_flavorizr),
-        super(_flavorizr);
+  Processor(this._pubspec)
+      : _availableProcessors = _initAvailableProcessors(_pubspec),
+        super(_pubspec.flavorizr);
 
   @override
   void execute() async {
-    final instructions = List.from(
-        _flavorizr.instructions ?? defaultInstructionSet)
-      ..removeWhere((instruction) =>
-          !_flavorizr.androidFlavorsAvailable &&
-          instruction.startsWith('android'))
-      ..removeWhere((instruction) =>
-          !_flavorizr.iosFlavorsAvailable && instruction.startsWith('ios'))
-      ..removeWhere((instruction) =>
-          !_flavorizr.macosFlavorsAvailable && instruction.startsWith('macos'));
+    final List<String> instructions =
+        _pubspec.flavorizr.instructions ?? defaultInstructionSet;
 
     for (String instruction in instructions) {
       stdout.writeln('Executing task $instruction');
 
-      AbstractProcessor? processor = _availableProcessors[instruction]?.call();
+      AbstractProcessor? processor = _availableProcessors[instruction];
       if (processor == null) {
         stderr.writeln('Cannot execute processor $instruction');
       }
@@ -142,191 +119,159 @@ class Processor extends AbstractProcessor<void> {
     }
   }
 
-  static Map<String, AbstractProcessor<void> Function()>
-      _initAvailableProcessors(
-    Flavorizr flavorizr,
-  ) {
+  static Map<String, AbstractProcessor<void>> _initAvailableProcessors(
+      Pubspec pubspec) {
     return {
       // Commons
-      'assets:download': () => DownloadFileProcessor(
+      'assets:download': DownloadFileProcessor(
+        K.assetsZipPath,
+        config: pubspec.flavorizr,
+      ),
+      'assets:extract': UnzipFileProcessor(
+        K.assetsZipPath,
+        K.tempPath,
+        config: pubspec.flavorizr,
+      ),
+      'assets:clean': QueueProcessor(
+        [
+          DeleteFileProcessor(
             K.assetsZipPath,
-            config: flavorizr,
+            config: pubspec.flavorizr,
           ),
-      'assets:extract': () => UnzipFileProcessor(
-            K.assetsZipPath,
+          DeleteFileProcessor(
             K.tempPath,
-            config: flavorizr,
+            config: pubspec.flavorizr,
           ),
-      'assets:clean': () => QueueProcessor(
-            [
-              DeleteFileProcessor(
-                K.assetsZipPath,
-                config: flavorizr,
-              ),
-              DeleteFileProcessor(
-                K.tempPath,
-                config: flavorizr,
-              ),
-            ],
-            config: flavorizr,
-          ),
+        ],
+        config: pubspec.flavorizr,
+      ),
 
       // Android
-      'android:androidManifest': () => ExistingFileStringProcessor(
-            K.androidManifestPath,
-            AndroidManifestProcessor(config: flavorizr),
-            config: flavorizr,
-          ),
-      'android:buildGradle': () => ExistingFileStringProcessor(
-            K.androidBuildGradlePath,
-            AndroidBuildGradleProcessor(
-              config: flavorizr,
-            ),
-            config: flavorizr,
-          ),
-      'android:dummyAssets': () => AndroidDummyAssetsProcessor(
-            K.tempAndroidResPath,
-            K.androidSrcPath,
-            config: flavorizr,
-          ),
-      'android:icons': () => AndroidIconsProcessor(
-            config: flavorizr,
-          ),
+      'android:androidManifest': ExistingFileStringProcessor(
+        K.androidManifestPath,
+        AndroidManifestProcessor(config: pubspec.flavorizr),
+        config: pubspec.flavorizr,
+      ),
+      'android:buildGradle': ExistingFileStringProcessor(
+        K.androidBuildGradlePath,
+        AndroidBuildGradleProcessor(
+          config: pubspec.flavorizr,
+        ),
+        config: pubspec.flavorizr,
+      ),
+      'android:dummyAssets': AndroidDummyAssetsProcessor(
+        K.tempAndroidResPath,
+        K.androidSrcPath,
+        config: pubspec.flavorizr,
+      ),
+      'android:icons': AndroidIconsProcessor(
+        config: pubspec.flavorizr,
+      ),
 
       //Flutter
-      'flutter:flavors': () => NewFileStringProcessor(
-            K.flutterFlavorPath,
-            FlutterFlavorsProcessor(config: flavorizr),
-            config: flavorizr,
-          ),
-      'flutter:app': () => CopyFileProcessor(
-            K.tempFlutterAppPath,
-            K.flutterAppPath,
-            config: flavorizr,
-          ),
-      'flutter:pages': () => CopyFolderProcessor(
-            K.tempFlutterPagesPath,
-            K.flutterPagesPath,
-            config: flavorizr,
-          ),
-      'flutter:main': () => CopyFileProcessor(
-            K.tempFlutterMainPath,
-            K.flutterMainPath,
-            config: flavorizr,
-          ),
-      'flutter:targets': () => FlutterTargetsFileProcessor(
-            K.tempFlutterMainTargetPath,
-            K.flutterPath,
-            config: flavorizr,
-          ),
+      'flutter:flavors': NewFileStringProcessor(
+        K.flutterFlavorPath,
+        FlutterFlavorsProcessor(config: pubspec.flavorizr),
+        config: pubspec.flavorizr,
+      ),
+      'flutter:app': CopyFileProcessor(
+        K.tempFlutterAppPath,
+        K.flutterAppPath,
+        config: pubspec.flavorizr,
+      ),
+      'flutter:pages': CopyFolderProcessor(
+        K.tempFlutterPagesPath,
+        K.flutterPagesPath,
+        config: pubspec.flavorizr,
+      ),
+      'flutter:targets': FlutterTargetsFileProcessor(
+        K.tempFlutterMainPath,
+        K.flutterPath,
+        config: pubspec.flavorizr,
+      ),
 
       //iOS
-      'ios:xcconfig': () => IOSXCConfigTargetsFileProcessor(
-            'ruby',
-            K.tempDarwinAddFileScriptPath,
-            K.iOSRunnerProjectPath,
-            K.iOSFlutterPath,
-            config: flavorizr,
-          ),
-      'ios:buildTargets': () => IOSBuildConfigurationsTargetsProcessor(
-            'ruby',
-            K.tempDarwinAddBuildConfigurationScriptPath,
-            K.iOSRunnerProjectPath,
-            K.iOSFlutterPath,
-            config: flavorizr,
-          ),
-      'ios:schema': () => DarwinSchemasProcessor(
-            'ruby',
-            K.tempDarwinCreateSchemeScriptPath,
-            K.iOSRunnerProjectPath,
-            config: flavorizr,
-          ),
-      'ios:dummyAssets': () => IOSDummyAssetsTargetsProcessor(
-            K.tempiOSAssetsPath,
-            K.iOSAssetsPath,
-            config: flavorizr,
-          ),
-      'ios:icons': () => IOSIconsProcessor(
-            config: flavorizr,
-          ),
-      'ios:plist': () => ExistingFileStringProcessor(
-            K.iOSPListPath,
-            IOSPListProcessor(config: flavorizr),
-            config: flavorizr,
-          ),
-      'ios:launchScreen': () => IOSTargetsLaunchScreenFileProcessor(
-            'ruby',
-            K.tempDarwinAddFileScriptPath,
-            K.iOSRunnerProjectPath,
-            K.tempiOSLaunchScreenPath,
-            K.iOSRunnerPath,
-            config: flavorizr,
-          ),
-
-      // MacOS
-      'macos:xcconfig': () => MacOSXCConfigTargetsFileProcessor(
-            K.macOSFlutterPath,
-            config: flavorizr,
-          ),
-      'macos:configs': () => MacOSConfigsTargetsFileProcessor(
-            'ruby',
-            K.tempDarwinAddFileScriptPath,
-            K.macOSRunnerProjectPath,
-            K.macOSConfigsPath,
-            config: flavorizr,
-          ),
-      'macos:buildTargets': () => MacOSBuildConfigurationsTargetsProcessor(
-            'ruby',
-            K.tempDarwinAddBuildConfigurationScriptPath,
-            K.macOSRunnerProjectPath,
-            K.macOSConfigsPath,
-            config: flavorizr,
-          ),
-      'macos:schema': () => DarwinSchemasProcessor(
-            'ruby',
-            K.tempDarwinCreateSchemeScriptPath,
-            K.macOSRunnerProjectPath,
-            config: flavorizr,
-          ),
-      'macos:dummyAssets': () => MacOSDummyAssetsTargetsProcessor(
-            K.tempMacOSAssetsPath,
-            K.macOSAssetsPath,
-            config: flavorizr,
-          ),
-      'macos:icons': () => MacOSIconsProcessor(
-            config: flavorizr,
-          ),
-      'macos:plist': () => ExistingFileStringProcessor(
-            K.macOSPlistPath,
-            MacOSPListProcessor(config: flavorizr),
-            config: flavorizr,
-          ),
+      'ios:xcconfig': IOSXCConfigTargetsFileProcessor(
+        'ruby',
+        K.tempiOSAddFileScriptPath,
+        K.iOSRunnerProjectPath,
+        K.iOSFlutterPath,
+        config: pubspec.flavorizr,
+      ),
+      'ios:buildTargets': IOSBuildConfigurationsTargetsProcessor(
+        'ruby',
+        K.tempiOSAddBuildConfigurationScriptPath,
+        K.iOSRunnerProjectPath,
+        K.iOSFlutterPath,
+        config: pubspec.flavorizr,
+      ),
+      'ios:schema': IOSSchemasProcessor(
+        'ruby',
+        K.tempiOSCreateSchemeScriptPath,
+        K.iOSRunnerProjectPath,
+        config: pubspec.flavorizr,
+      ),
+      'ios:dummyAssets': IOSDummyAssetsTargetsProcessor(
+        K.tempiOSAssetsPath,
+        K.iOSAssetsPath,
+        config: pubspec.flavorizr,
+      ),
+      'ios:icons': IOSIconsProcessor(
+        config: pubspec.flavorizr,
+      ),
+      'ios:plist': pubspec.flavorizr.app?.ios?.iOSPListFiles != null &&
+              pubspec.flavorizr.app!.ios!.iOSPListFiles!.isNotEmpty
+          ? QueueProcessor(
+              pubspec.flavorizr.app!.ios!.iOSPListFiles!
+                  .map<ExistingFileStringProcessor>(
+                      (String path) => ExistingFileStringProcessor(
+                            path,
+                            IOSPListProcessor(config: pubspec.flavorizr),
+                            config: pubspec.flavorizr,
+                          ))
+                  .toList(),
+              config: pubspec.flavorizr,
+            )
+          : ExistingFileStringProcessor(
+              pubspec.flavorizr.app?.ios != null &&
+                      pubspec.flavorizr.app!.ios!.buildSettings
+                          .containsKey('INFOPLIST_FILE')
+                  ? pubspec.flavorizr.app?.ios?.buildSettings['INFOPLIST_FILE']
+                  : K.iOSPListPath,
+              IOSPListProcessor(config: pubspec.flavorizr),
+              config: pubspec.flavorizr,
+            ) as AbstractProcessor,
+      'ios:launchScreen': IOSTargetsLaunchScreenFileProcessor(
+        'ruby',
+        K.tempiOSAddFileScriptPath,
+        K.iOSRunnerProjectPath,
+        K.tempiOSLaunchScreenPath,
+        K.iOSRunnerPath,
+        config: pubspec.flavorizr,
+      ),
 
       // Google
-      'google:firebase': () => FirebaseProcessor(
-            process: 'ruby',
-            androidDestination: K.androidSrcPath,
-            iosDestination: K.iOSRunnerPath,
-            macosDestination: K.macOSRunnerPath,
-            addFileScript: K.tempDarwinAddFileScriptPath,
-            iosRunnerProject: K.iOSRunnerProjectPath,
-            macosRunnerProject: K.macOSRunnerProjectPath,
-            firebaseScript: K.tempDarwinAddFirebaseBuildPhaseScriptPath,
-            iosGeneratedFirebaseScriptPath: K.iOSFirebaseScriptPath,
-            macosGeneratedFirebaseScriptPath: K.macOSFirebaseScriptPath,
-            config: flavorizr,
-          ),
+      'google:firebase': FirebaseProcessor(
+        process: 'ruby',
+        androidDestination: K.androidSrcPath,
+        iosDestination: K.iOSRunnerPath,
+        addFileScript: K.tempiOSAddFileScriptPath,
+        runnerProject: K.iOSRunnerProjectPath,
+        firebaseScript: K.tempiOSAddFirebaseBuildPhaseScriptPath,
+        generatedFirebaseScriptPath: K.tempiOSFirebaseScriptPath,
+        config: pubspec.flavorizr,
+      ),
 
       // Huawei
-      'huawei:agconnect': () => AGConnectProcessor(
-            destination: K.androidSrcPath,
-            config: flavorizr,
-          ),
+      'huawei:agconnect': AGConnectProcessor(
+        destination: K.androidSrcPath,
+        config: pubspec.flavorizr,
+      ),
 
       // IDE
-      'ide:config': () => IDEProcessor(
-            config: flavorizr,
-          ),
+      'ide:config': IDEProcessor(
+        config: pubspec.flavorizr,
+      ),
     };
   }
 }
