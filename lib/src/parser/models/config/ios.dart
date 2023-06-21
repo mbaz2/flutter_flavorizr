@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2023 Angelo Cassano
+ * Copyright (c) 2022 MyLittleSuite
  *
  * Permission is hereby granted, free of charge, to any person
  * obtaining a copy of this software and associated documentation
@@ -23,17 +23,22 @@
  * OTHER DEALINGS IN THE SOFTWARE.
  */
 
-import 'package:flutter_flavorizr/src/parser/mixins/build_settings_mixin.dart';
+import 'package:flutter_flavorizr/parser/mixins/build_settings_mixin.dart';
 import 'package:json_annotation/json_annotation.dart';
 
 part 'ios.g.dart';
 
 @JsonSerializable(anyMap: true, createToJson: false)
 class IOS with BuildSettingsMixin {
-  IOS({Map<String, dynamic> buildSettings = const {}}) {
-    this.buildSettings = BuildSettingsMixin.iosDefaultBuildSettings;
+  IOS(
+      {Map<String, dynamic> buildSettings = const {},
+      this.iOSPListFiles = const []}) {
+    this.buildSettings = BuildSettingsMixin.defaultBuildSettings;
     this.buildSettings.addAll(buildSettings);
   }
+
+  @JsonKey(disallowNullValue: true, defaultValue: [])
+  final List<String> iOSPListFiles;
 
   factory IOS.fromJson(Map<String, dynamic> json) => _$IOSFromJson(json);
 }
